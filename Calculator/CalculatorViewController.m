@@ -7,54 +7,71 @@
 //
 
 #import "CalculatorViewController.h"
+#import "CalculatorBrain.h"
+
+@interface CalculatorViewController()
+@property (nonatomic) BOOL userIsInTheMiddleOfEnteringNumber;
+@property (nonatomic, strong) CalculatorBrain *brain;
+@property (nonatomic) BOOL userEnteredPoint;
+@end
 
 @implementation CalculatorViewController
 
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Release any cached data, images, etc that aren't in use.
+@synthesize display;
+@synthesize textsofar;
+@synthesize userIsInTheMiddleOfEnteringNumber;
+@synthesize userEnteredPoint;
+
+@synthesize brain = _brain;
+
+- (CalculatorBrain *) brain {
+    if (!_brain) _brain = [[CalculatorBrain alloc] init];
+    return _brain;
 }
 
-#pragma mark - View lifecycle
-
-- (void)viewDidLoad
-{
-    [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
+- (IBAction)digitPressed:(UIButton *)sender {
+    NSString *digit = [sender currentTitle];
+    if (userIsInTheMiddleOfEnteringNumber) {
+        self.display.text = [self.display.text stringByAppendingString:digit];
+        self.textsofar.text = [self.textsofar.text stringByAppendingString:digit];
+    }
+    else {
+        self.textsofar.text = [[self.textsofar.text stringByAppendingString:@" "] stringByAppendingString:digit ];
+        self.display.text = digit;
+        userIsInTheMiddleOfEnteringNumber = YES;
+    }
 }
 
-- (void)viewDidUnload
-{
-    [super viewDidUnload];
-    // Release any retained subviews of the main view.
-    // e.g. self.myOutlet = nil;
+- (IBAction)enterPressed {
+    [self.brain pushOperand:[self.display.text doubleValue]];
+    self.userIsInTheMiddleOfEnteringNumber = NO;
+    self.userEnteredPoint = NO;
 }
 
-- (void)viewWillAppear:(BOOL)animated
-{
-    [super viewWillAppear:animated];
-}
+- (IBAction)operationPressed:(id)sender {
+    if (self.userIsInTheMiddleOfEnteringNumber)
+    {
+        [self enterPressed];
+    }
+    NSString *operation = [sender currentTitle];
+    double result = [self.brain performOperation:operation];
+    self.display.text = [NSString stringWithFormat:@"%g", result];
+    self.textsofar.text = [[self.textsofar.text stringByAppendingString:@" "] stringByAppendingString:operation ];
 
-- (void)viewDidAppear:(BOOL)animated
-{
-    [super viewDidAppear:animated];
 }
-
-- (void)viewWillDisappear:(BOOL)animated
-{
-	[super viewWillDisappear:animated];
+- (IBAction)pointPressed:(id)sender {
+    if (!self.userEnteredPoint && self.userIsInTheMiddleOfEnteringNumber)
+    {
+        self.userEnteredPoint = YES;
+        self.textsofar.text = [self.textsofar.text stringByAppendingString:@"."];
+        self.display.text = [self.display.text stringByAppendingString:@"."];
+    }
 }
-
-- (void)viewDidDisappear:(BOOL)animated
-{
-	[super viewDidDisappear:animated];
+- (IBAction)clearPressed {
+    self.userEnteredPoint = NO;
+    self.userIsInTheMiddleOfEnteringNumber = NO;
+    self.display.text = @"0";
+    self.textsofar.text = @"";
+    [self.brain clearState];
 }
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-    // Return YES for supported orientations
-    return (interfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
-}
-
 @end
